@@ -1,0 +1,39 @@
+# Based on https://github.com/elastic/elasticsearch/commit/ae6331f27e9237c0fbdf2a7a175026fbf91fccd7
+# see also https://github.com/elastic/elasticsearch/issues/23486
+190,192d189
+<     // pattern for lines in /proc/self/cgroup
+<     private static final Pattern CONTROL_GROUP_PATTERN = Pattern.compile("\\d+:([^:]+):(/.*)");
+< 
+208,216c205,213
+<             final Matcher matcher = CONTROL_GROUP_PATTERN.matcher(line);
+<             // note that Matcher#matches must be invoked as
+<             // matching is lazy; this can not happen in an assert
+<             // as assertions might not be enabled
+<             final boolean matches = matcher.matches();
+<             assert matches : line;
+<             // at this point we have captured the subsystems and the
+<             // control group
+<             final String[] controllers = matcher.group(1).split(",");
+---
+>             /*
+>              * The virtual file /proc/self/cgroup lists the control groups that the Elasticsearch process is a member of. Each line contains
+>              * three colon-separated fields of the form hierarchy-ID:subsystem-list:cgroup-path. For cgroups version 1 hierarchies, the
+>              * subsystem-list is a comma-separated list of subsystems. The subsystem-list can be empty if the hierarchy represents a cgroups
+>              * version 2 hierarchy. For cgroups version 1
+>              */
+>             final String[] fields = line.split(":");
+>             assert fields.length == 3;
+>             final String[] controllers = fields[1].split(",");
+217a215
+>                 final String controlGroupPath;
+224c222
+<                     controllerMap.put(controller, CONTROL_GROUPS_HIERARCHY_OVERRIDE);
+---
+>                     controlGroupPath = CONTROL_GROUPS_HIERARCHY_OVERRIDE;
+226c224
+<                     controllerMap.put(controller, matcher.group(2));
+---
+>                     controlGroupPath = fields[2];
+227a226,227
+>                 final String previous = controllerMap.put(controller, controlGroupPath);
+>                 assert previous == null;
